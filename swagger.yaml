@@ -1,0 +1,2914 @@
+openapi: 3.0.3
+info:
+  title: Height APP API
+  description: >-
+    Unofficial Open API 3.1 specification for [Height App
+    API](https://www.notion.so/API-documentation-643aea5bf01742de9232e5971cb4afda).
+    This is not affiliated with Height team.
+
+
+    ---
+
+    # Authentication
+
+
+    The Height API uses API keys to authenticate requests. **You can view your
+    API key in the Height settings under API**.
+
+
+    Authentication to the API is performed via the `Authorization` header. All
+    API requests should be made over HTTPs.
+
+
+    i.e. Get your workspace.
+
+
+    ```bash
+
+    curl https://api.height.app/workspace \
+      -H "Authorization: api-key secret_1234"
+    ```
+
+
+    Third-party applications must connect to the Height API using
+    [OAuth2](https://www.notion.so/API-documentation-643aea5bf01742de9232e5971cb4afda).
+
+
+    See [OAuth Apps on
+    Height](https://www.notion.so/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640)
+    for more information.
+
+
+    # Object formats
+
+
+    All objects have a unique `id` ([UUID
+    v4](https://en.m.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)))
+    and a `model` attribute to distinguish the model type.
+
+
+    e.g. a task object.
+
+
+    ```json
+
+    {
+      "id": "123e4567-e89b-12d3-a456-426655440000",
+      "model": "task",
+      "name": "Fix bug",
+      "index": 1,
+      "status": "backLog",
+      [...]
+    }
+
+    ```
+
+
+    # Date formats
+
+
+    Every date uses the ISO format e.g.
+
+
+    ```js
+
+    "2019-11-07T17:00:00.000Z"
+
+    ```
+
+
+    # Real-time
+
+
+    Any change that you make to the API will be pushed to every user in
+    real-time: i.e. creating tasks or messages.
+
+
+    # Rate limits
+
+
+    To keep incoming traffic under control and maintain a great experience for
+    all our users, our API is behind a rate limiter. Users who send many
+    requests in quick succession may see error responses that show up as status
+    code 429.
+
+
+    Height allows up to 120 requests/min, but we have stricter limits on these
+    endpoints:
+
+
+    - `POST /activities`: 60 requests/min
+
+    - `POST /tasks`: 60 requests/min
+  contact:
+    email: gil@beomjun.kr
+  license:
+    name: MIT
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: Height official API Docs
+  url: https://www.notion.so/API-documentation-643aea5bf01742de9232e5971cb4afda
+servers:
+  - url: https://api.height.app
+security:
+  - apiKey: []
+tags:
+  - name: Lists
+    description: >-
+      Tasks belong to one list. To create tasks, it's necessary to know in which
+      list you want to create them.
+  - name: Tasks
+  - name: Activities
+    description: >-
+      Activities can be messages, status updates of the task or integration
+      updates (i.e. GitHub).
+  - name: Field templates
+    description: >-
+      Field templates define what attributes look like. To create tasks with
+      custom attributes, it's important to know which field templates are
+      available.
+  - name: Task forms
+  - name: Users
+  - name: Groups
+  - name: Security log events
+  - name: Workspace
+  - name: Search
+  - name: Webhooks
+  - name: OAuth
+    description: >-
+      Height uses the authorization code grant flow (see the [OAuth2
+      spec](https://datatracker.ietf.org/doc/html/rfc6749) ) in which an
+      application should send the user to Heightâ€™s authorization endpoint to ask
+      for permission to access their Height workspace. If granted, the app will
+      receive a redirect with a code that can be exchanged for an access token.
+      This token can be used in the `Authorization` header to make Height API
+      calls on behalf of the user.
+paths:
+  /lists:
+    post:
+      tags:
+        - Lists
+      summary: Create a list
+      operationId: createList
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.lists.create({
+              name: 'My List',
+              type: 'list',
+              // ...
+            });
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateListRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListObject'
+    get:
+      tags:
+        - Lists
+      summary: List all lists
+      operationId: listAllLists
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.lists.all();
+      description: >-
+        Use this endpoint to retrieve all the lists of the workspace. Only lists
+        shared with the entire workspace will be returned.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ListAllResponse'
+  /lists/{id}:
+    put:
+      tags:
+        - Lists
+      summary: Update a list
+      operationId: updateList
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.lists.update({...});
+      parameters:
+        - name: id
+          in: path
+          description: The unique id of the list (UUIDv4)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateListRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListObject'
+  /tasks:
+    post:
+      tags:
+        - Tasks
+      summary: Create a task
+      operationId: createTask
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.tasks.create({...});
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskObject'
+      parameters:
+        - name: realtime
+          in: query
+          description: (defaults to true) - use false when migrating tasks
+          schema:
+            type: boolean
+        - name: notifyUsers
+          in: query
+          description: (defaults to true) - use false when migrating tasks
+          schema:
+            type: boolean
+    patch:
+      tags:
+        - Tasks
+      summary: Patch multiples tasks
+      operationId: patchTasks
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.tasks.patch({...});
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchTasksRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PatchTasksResponse'
+    get:
+      tags:
+        - Tasks
+      summary: Search tasks
+      operationId: searchTasks
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            const request: SearchTasksRequest = {};
+            height.tasks.search(request);
+      parameters:
+        - name: filters
+          in: query
+          description: JSON object with filters
+          example: >-
+            {"status":{"values":["backLog","inProgress"]},"assigneeId":{"values":["123e4567-e89b-12d3-a456-426655440000"]},"completed":{"values":[false]},"lastActivityAt":{"values":[],"gt":{"date":"2019-11-07T17:00:00.000Z"}}}
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchTasksResponse'
+  "/tasks/{id}":
+    get:
+      tags:
+        - Tasks
+      summary: Get a task
+      operationId: getTask
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.tasks.get({...});
+      parameters:
+        - name: id
+          in: path
+          description: task index (number) or task id (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: include
+          in: query
+          description: What you wish to include with the task.
+          schema:
+            type: string
+            enum:
+              - Assignees
+              - CreatedByUser
+              - CompletedByUser
+              - DeletedByUser
+              - Subscribers
+              - Fields.User
+              - Lists
+              - Status
+              - Mentions
+              - NotificationsSubscription
+              - ParentTasks
+              - SubtaskIds
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskObject'
+    patch:
+      tags:
+        - Tasks
+      summary: Update a single task
+      operationId: updateTask
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.tasks.update({...});
+      parameters:
+        - name: id
+          in: path
+          description: task index (number) or task id (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskObject'
+  /tasks/move:
+    put:
+      tags:
+        - Tasks
+      summary: Move tasks
+      description: >-
+        Not working.
+        https://www.notion.so/Move-tasks-0e612add3e09400bacc6119c8129fa67
+      operationId: moveTasks
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.tasks.move({...});
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveTasksRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+  /activities:
+    post:
+      tags:
+        - Activities
+      summary: Post a message
+      operationId: postMessage
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.activities.post({...});
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostMessageRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityObject'
+    get:
+      tags:
+        - Activities
+      summary: List activities and messages
+      operationId: listActivities
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.activities.get({...});
+      parameters:
+        - name: taskId
+          in: query
+          description: >-
+            Either the task unique `id` (UUID), or the task unique `index` (the
+            123 of T-123).
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListActivitiesResponse'
+  /fieldTemplates:
+    get:
+      tags:
+        - Field Templates
+      summary: List all field templates
+      operationId: listAllFieldTemplates
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.fieldTemplates.all();
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAllFieldTemplatesResponse'
+  /fieldTemplates/{id}/options:
+    post:
+      tags:
+        - Field Templates
+      summary: Create an option for a field template
+      description: This endpoint adds an option to a `select` or `labels` field template.
+      operationId: createFieldTemplateOption
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.fieldTemplates.createOption({...});
+      parameters:
+        - name: id
+          in: path
+          description: field template id (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFieldTemplateOptionRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FieldTemplateObject'
+  /fieldTemplates/{id}/options/{optionId}:
+    put:
+      tags:
+        - Field Templates
+      summary: Update or delete an option for a field template
+      operationId: updateFieldTemplateOption
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.fieldTemplates.updateOption({...});
+      description: >-
+        This endpoint updates or deletes an option to a `select` or `labels`
+        field template.
+
+
+        The field template must be unlocked to use this endpoint.  Locking and
+        unlocking field templates is an enterprise feature.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: optionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFieldTemplateOptionRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FieldTemplateObject'
+  /taskForms/{id}/answers:
+    post:
+      tags:
+        - Task Forms
+      summary: Create a task from a public task form
+      operationId: createTaskFromTaskForm
+      description: >-
+        Task forms have a set number of questions, so it is impossible to set
+        some attributes for a task using this endpoint
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.taskForms.createTask({...});
+      parameters:
+        - name: id
+          in: path
+          description: task form id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: asBot
+          in: query
+          description: >-
+            Only allowed for public task forms, and required if not
+            authenticated
+          schema:
+            type: boolean
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskFromTaskFormRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskObject'
+  /taskForms/{urlKey}:
+    get:
+      tags:
+        - Task Forms
+      summary: Get a task form
+      operationId: getTaskForm
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.taskForms.get({...});
+      parameters:
+        - name: urlKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: keyType
+          in: query
+          description: One of key or urlKey, defaulting to id
+          schema:
+            type: string
+            enum:
+              - key
+              - urlKey
+        - name: include
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              description: >-
+                Task form include type. Valid values are "RestrictedUsers",
+                "RestrictedLists", "FieldTemplates", "SubtaskForms",
+                "Questions", and "Fields".
+              enum:
+                - RestrictedUsers
+                - RestrictedLists
+                - FieldTemplates
+                - SubtaskForms
+                - Questions
+                - Fields
+          description: Array of task form includes
+        - name: archived
+          in: query
+          schema:
+            type: boolean
+            description: only look for archived or unarchived forms
+        - name: draft
+          in: query
+          schema:
+            type: boolean
+            description: only look for archived or unarchived forms
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskFormObject'
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get all users
+      operationId: getUsers
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.users.all();
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAllUsersResponse'
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get a user
+      operationId: getUser
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.users.get({...});
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserObject'
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get the current user
+      operationId: getCurrentUser
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.users.me();
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserObject'
+  /groups:
+    get:
+      tags:
+        - Groups
+      summary: Get all groups
+      operationId: getAllGroups
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.groups.all();
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAllGroupsResponse'
+  /securityLogEvents:
+    get:
+      tags:
+        - Security Log Events
+      summary: List all security log event objects
+      operationId: listSecurityLogEvents
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.securityLogEvents.all();
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAllSecurityLogEventsResponse'
+  /workspace:
+    get:
+      tags:
+        - Workspace
+      summary: Retrieve the workspace
+      operationId: retrieveWorkspace
+      x-codeSamples:
+        - lang: JavaScript
+          label: SDK
+          source: |-
+            const height = new Height({secretKey: 'secret_your-key'});
+
+            height.workspace.get();
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceObject'
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      name: Authorization
+      description: >-
+        The Height API uses API keys to authenticate requests. **You can view
+        your API key in the Height settings under API**.
+         ex: `api-key secret_1234`
+      in: header
+  schemas:
+    ListObject:
+      type: object
+      description: >-
+        Tasks belong to one list. To create tasks, it's necessary to know in
+        which list you want to create them.
+      required:
+        - id
+        - model
+        - type
+        - key
+        - description
+        - url
+        - appearance
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique id of the list (UUIDv4)
+        model:
+          type: string
+          example: list
+          enum:
+            - list
+          description: The model is always `list`
+        type:
+          type: string
+          description: >-
+            - `list`: a list that contains tasks. You can only create tasks in
+            this type of list directly.
+
+            - `smartlist`: a smart list use filters to find tasks across
+            different lists
+
+            - `user`: a special smart list that displays tasks assigned to a
+            user
+
+            - `inbox`: a special smart list to display recent conversations
+
+            - `search`: a special smart list to search tasks
+          enum:
+            - list
+            - smartlist
+            - user
+            - inbox
+            - search
+        key:
+          type: string
+          description: >-
+            The unique key of your list is used as their url.
+
+
+            If the key is `general`, the url will be:
+            `https://your-workspace.height.app/general`
+
+
+            Keys need to respect these rules:
+
+
+            - valid characters are: lower-case letters, dashes and numbers
+
+            - needs to start with a lower-case letter
+
+            - key is unique across the workspace
+        description:
+          type: string
+          description: The description of the list. It can be an empty string.
+        url:
+          type: string
+          description: The url of the list.
+        appearance:
+          type: object
+          required:
+            - iconUrl
+          properties:
+            iconUrl:
+              type: string
+              description: URL of the list icon
+            hue:
+              type: number
+              description: 'hue of the list color '
+    FiltersObject:
+      type: object
+      description: See FiltersObject.ts
+    CreateNormalListRequest:
+      type: object
+      description: Create a list
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - list
+            - smartlist
+        description:
+          type: string
+        appearance:
+          type: object
+          required:
+            - icon
+          properties:
+            icon:
+              type: string
+              enum:
+                - list
+                - listCircles
+                - listTriangle
+                - listSquare
+                - listLines
+                - listRectangles
+                - listCircle
+                - listRocket
+                - listMushroom
+                - listBolt
+                - listBug
+                - listFlower
+                - listThumbsUp
+                - listTarget
+                - listSparkle
+                - listMedal
+                - listFlag
+            hue:
+              description: |-
+                Hue is between 0 and 360 and used to determine the color.
+
+                If `null`, the list has no color.
+              type: number
+              minimum: 0
+              maximum: 360
+        visualization:
+          description: visualization string (optional, default = list) list or kanban
+          default: list
+          type: string
+          enum:
+            - list
+            - kanban
+    CreateSmartListRequest:
+      type: object
+      description: Create a smartlist
+      required:
+        - name
+        - type
+        - filters
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - list
+            - smartlist
+        description:
+          type: string
+        filters:
+          $ref: '#/components/schemas/FiltersObject'
+        appearance:
+          type: object
+          required:
+            - icon
+          properties:
+            icon:
+              type: string
+              enum:
+                - list
+                - listCircles
+                - listTriangle
+                - listSquare
+                - listLines
+                - listRectangles
+                - listCircle
+                - listRocket
+                - listMushroom
+                - listBolt
+                - listBug
+                - listFlower
+                - listThumbsUp
+                - listTarget
+                - listSparkle
+                - listMedal
+                - listFlag
+            hue:
+              description: |-
+                Hue is between 0 and 360 and used to determine the color.
+
+                If `null`, the list has no color.
+              type: number
+              minimum: 0
+              maximum: 360
+        visualization:
+          description: visualization string (optional, default = list) list or kanban
+          default: list
+          type: string
+          enum:
+            - list
+            - kanban
+    CreateListRequest:
+      oneOf:
+        - $ref: '#/components/schemas/CreateNormalListRequest'
+        - $ref: '#/components/schemas/CreateSmartListRequest'
+    ListAllResponse:
+      type: object
+      required:
+        - lists
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListObject'
+    UpdateListRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        appearance:
+          type: object
+          properties:
+            icon:
+              type: string
+              description: the name of the icon e.g. listCircles, listBug.
+            hue:
+              type: number
+          required:
+            - icon
+        visualization:
+          type: string
+          enum:
+            - list
+            - kanban
+            - calendar
+            - gantt
+            - conversation
+            - figma
+        archivedAt:
+          type: string
+          description: >-
+            string representing a date the list was archived at, in the form of
+            an ISO 8601 date (e.g. 2011-04-11T10:20:30Z).
+          format: date-time
+    UpdateListRequestWithId:
+      allOf:
+        - $ref: '#/components/schemas/UpdateListRequest'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              description: The id of the list
+    TaskObject:
+      type: object
+      required:
+        - id
+        - model
+        - index
+        - listIds
+        - name
+        - description
+        - status
+        - assigneesIds
+        - fields
+        - deleted
+        - deletedAt
+        - deletedByUserId
+        - completed
+        - completedAt
+        - createdAt
+        - createdUserId
+        - lastActivityAt
+        - url
+        - trashedAt
+        - trashedByUserId
+      properties:
+        id:
+          type: string
+          description: The unique id of the task
+        model:
+          type: string
+          enum:
+            - task
+          description: The model is always `task`
+        index:
+          type: number
+          description: The task index. For example, if the task is T-123, its index is 123.
+        listIds:
+          type: array
+          description: >-
+            Tasks belong to one or more lists. To create tasks, it's necessary
+            to know in which list you want to create them.
+          items:
+            type: string
+            format: uuid
+        name:
+          type: string
+          description: The name of the task.
+        description:
+          type: string
+          description: >-
+            The description of the task. It's only retrieved if you use include.
+            See ['Get a
+            task'](https://www.notion.so/Get-a-task-8afda1c08e7f4f07a5c53720710cf24e).
+        status:
+          type: string
+          description: >-
+            The status of the task.
+
+            - `backLog`
+
+            - `inProgress`
+
+            - `done`
+
+            - and any *UUID* of available statuses. You can find the *UUIDs*
+            through the field template API.
+        assigneesIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: >-
+            The assignees of the task. You can find the UUIDs of users through
+            the users API.
+             ['List all users'](https://www.notion.so/List-all-users-ea66d04e48534b32927903c4deee58e8)
+          minItems: 1
+        fields:
+          type: array
+          items:
+            type: object
+            required:
+              - fieldTemplateId
+            properties:
+              fieldTemplateId:
+                type: string
+                format: uuid
+                description: The id of the appropriate field template
+              value:
+                type: string
+                description: >-
+                  For text fields: the text value of the field. For select
+                  fields: the id of the selected option
+              date:
+                type: string
+                format: date-time
+                description: 'For date fields: the date value of the field'
+              labels:
+                type: array
+                items:
+                  type: string
+                description: 'For labels fields: the labels of the field'
+              linkedTasks:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    index:
+                      type: number
+                description: >-
+                  For linkedTasks fields: the tasks to be linked, in the format:
+                  { "id": "UUID", "index": number }
+        deleted:
+          type: boolean
+          description: If the task was deleted.
+        deletedAt:
+          type: string
+          format: date-time
+          description: The date at which the task was deleted.
+        deletedByUserId:
+          type: string
+          format: uuid
+          description: The user that deleted the task.
+        completed:
+          type: boolean
+          description: >-
+            If the status is considered as completed (i.e. `done`), the value
+            will be `true`.
+        completedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        createdUserId:
+          type: string
+          format: uuid
+          description: The user that created the task.
+        lastActivityAt:
+          type: string
+          format: date-time
+        url:
+          type: string
+          description: The URL of the task.
+        trashedAt:
+          type: string
+          format: date-time
+          description: >-
+            A timestamp when the task was moved to the trash. Tasks are deleted
+            after 30 days in the trash. This will be null unless the task is
+            currently in the trash or deleted.
+        trashedByUserId:
+          type: string
+          format: uuid
+          description: The id of the user that moved the task to the trash
+        parentTaskId:
+          type: string
+          format: uuid
+          description: >-
+            If the task is a subtask of another task, `parentTaskId` will be the
+            id of the parent task.
+    ZendeskTicketLinkObject:
+      type: object
+      required:
+        - url
+        - metadata
+      properties:
+        url:
+          type: string
+          description: The URL of the Zendesk ticket.
+        metadata:
+          type: object
+          required:
+            - type
+            - ticketId
+          properties:
+            type:
+              type: string
+              enum:
+                - zendeskTicket
+              description: The type of the metadata.
+            ticketId:
+              type: integer
+              description: The ID of the Zendesk ticket.
+            subject:
+              type: string
+              description: The subject of the Zendesk ticket.
+            description:
+              type: string
+              description: The description of the Zendesk ticket.
+    NotionDocumentLinkObject:
+      type: object
+      required:
+        - url
+        - metadata
+      properties:
+        url:
+          type: string
+          description: The URL of the Notion document.
+        metadata:
+          type: object
+          required:
+            - type
+            - pageId
+          properties:
+            type:
+              type: string
+              enum:
+                - notionDocument
+              description: The type of the metadata.
+            pageId:
+              type: string
+              description: The ID of the Notion page.
+    FigmaLinkObject:
+      type: object
+      required:
+        - url
+        - metadata
+      properties:
+        url:
+          type: string
+          description: The URL of the Figma link.
+        metadata:
+          type: object
+          required:
+            - type
+            - fileKey
+          properties:
+            type:
+              type: string
+              enum:
+                - figmaLink
+              description: The type of the metadata.
+            document:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  description: The ID of the Figma document.
+                name:
+                  type: string
+                  description: The name of the Figma document (optional).
+              description: The Figma document.
+            fileKey:
+              type: string
+              description: The file key of the Figma document.
+            page:
+              oneOf:
+                - type: object
+                  required:
+                    - id
+                  properties:
+                    id:
+                      type: string
+                      description: The ID of the Figma page.
+                    name:
+                      type: string
+                      description: The name of the Figma page (optional).
+                  description: The Figma page.
+                - type: 'string'
+                  description: No Figma page is associated with this link.
+            frame:
+              oneOf:
+                - type: object
+                  required:
+                    - id
+                  properties:
+                    id:
+                      type: string
+                      description: The ID of the Figma frame.
+                    name:
+                      type: string
+                      description: The name of the Figma frame (optional).
+                  description: The Figma frame.
+                - type: 'string'
+                  description: No Figma frame is associated with this link.
+    SentryIssueLinkObject:
+      type: object
+      required:
+        - metadata
+      properties:
+        metadata:
+          type: object
+          required:
+            - type
+            - project
+            - issueId
+          properties:
+            type:
+              type: string
+              enum:
+                - sentryIssue
+              description: The type of the metadata.
+            project:
+              type: object
+              required:
+                - slug
+                - id
+              properties:
+                slug:
+                  type: string
+                  description: The slug of the Sentry project.
+                id:
+                  type: string
+                  description: The ID of the Sentry project.
+              description: The Sentry project.
+            issueId:
+              type: string
+              description: The ID of the Sentry issue.
+    SentryAlertLinkObject:
+      type: object
+      required:
+        - metadata
+      properties:
+        metadata:
+          type: object
+          required:
+            - type
+            - organizationId
+            - lastAlertEvent
+            - alertRuleId
+            - lastAlertStatus
+          properties:
+            type:
+              type: string
+              enum:
+                - sentryAlert
+              description: The type of the metadata.
+            organizationId:
+              type: string
+              description: The ID of the Sentry organization.
+            lastAlertEvent:
+              type: string
+              format: date-time
+              description: The date and time of the last alert event for the Sentry alert.
+            alertRuleId:
+              type: string
+              description: The ID of the alert rule for the Sentry alert.
+            lastAlertStatus:
+              type: string
+              enum:
+                - critical
+                - warning
+                - resolved
+              description: The status of the last alert for the Sentry alert.
+    LinkObjects:
+      oneOf:
+        - $ref: '#/components/schemas/ZendeskTicketLinkObject'
+        - $ref: '#/components/schemas/NotionDocumentLinkObject'
+        - $ref: '#/components/schemas/FigmaLinkObject'
+        - $ref: '#/components/schemas/SentryIssueLinkObject'
+        - $ref: '#/components/schemas/SentryAlertLinkObject'
+    CreateTaskRequest:
+      type: object
+      required:
+        - name
+        - listIds
+      properties:
+        name:
+          type: string
+        listIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+          description: An array of UUIDs (one or more)
+        description:
+          type: string
+        status:
+          type: string
+        assigneesIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: An array of UUIDs of the users assigned to the task (optional).
+        parentTaskId:
+          type: string
+          format: uuid
+          description: The UUID of the parent task (optional).
+        fields:
+          type: array
+          items:
+            type: object
+            required:
+              - fieldTemplateId
+            properties:
+              fieldTemplateId:
+                type: string
+                format: uuid
+                description: The id of the appropriate field template
+              value:
+                type: string
+                description: >-
+                  For text fields: the text value of the field. For select
+                  fields: the id of the selected option
+              date:
+                type: string
+                format: date-time
+                description: 'For date fields: the date value of the field'
+              labels:
+                type: array
+                items:
+                  type: string
+                description: 'For labels fields: the labels of the field'
+              linkedTasks:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    index:
+                      type: number
+                description: >-
+                  For linkedTasks fields: the tasks to be linked, in the format:
+                  { "id": "UUID", "index": number }
+        orderIntent:
+          type: object
+          description: Inserts the task at the right place in the list.
+          properties:
+            intent:
+              type: string
+              enum:
+                - start
+                - end
+                - before
+                - after
+            taskId:
+              type: string
+              format: uuid
+              description: (only used for before and after intent)
+    CreateTaskRequestWithQueries:
+      allOf:
+        - $ref: '#/components/schemas/CreateTaskRequest'
+        - type: object
+          description: This is for queries
+          properties:
+            queryParams:
+              type: object
+              properties:
+                realtime:
+                  description: (defaults to true) - use false when migrating tasks
+                  type: boolean
+                notifyUsers:
+                  description: (defaults to true) - use false when migrating tasks
+                  type: boolean
+    PatchTasksNameEffect:
+      type: object
+      description: Update name
+      required:
+        - type
+        - name
+      properties:
+        type:
+          type: string
+          enum:
+            - name
+        name:
+          type: string
+    PatchTasksDescriptionEffect:
+      type: object
+      description: Update description
+      required:
+        - type
+        - description
+      properties:
+        type:
+          type: string
+          enum:
+            - description
+        description:
+          type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+    PatchTasksStatusEffect:
+      type: object
+      description: Update status
+      required:
+        - type
+        - status
+      properties:
+        type:
+          type: string
+          enum:
+            - status
+        status:
+          description: >-
+            The status of the task.
+
+            - `backLog`
+
+            - `inProgress`
+
+            - `done`
+
+            - and any *UUID* of available statuses. You can find the *UUIDs*
+            through the field template API.
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 date-time
+    PatchTasksDeletedEffect:
+      type: object
+      description: Update deleted
+      required:
+        - type
+        - deleted
+      properties:
+        type:
+          type: string
+          enum:
+            - deleted
+        deleted:
+          type: boolean
+    PatchTasksParentTaskEffect:
+      type: object
+      description: Update parent task
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - parentTask
+        parentTaskId:
+          type: string
+          format: uuid
+          description: The UUID of the parent task (optional).
+    PatchTasksAssigneesEffect:
+      type: object
+      description: Update assignees
+      required:
+        - type
+        - assigneesIds
+      properties:
+        type:
+          type: string
+          enum:
+            - assignees
+        assigneesIds:
+          type: array
+          items:
+            type: object
+            properties:
+              add:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+              remove:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+          description: An array of UUIDs of the users assigned to the task (optional).
+    PatchTasksListsEffect:
+      type: object
+      description: Update lists
+      properties:
+        type:
+          type: string
+          enum:
+            - lists
+        listIds:
+          type: array
+          items:
+            type: object
+            properties:
+              add:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+              remove:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+          description: An array of UUIDs
+    PatchTasksFieldsEffect:
+      type: object
+      description: Update fields
+      required:
+        - type
+        - fieldTemplateId
+        - fields
+      properties:
+        type:
+          type: string
+          enum:
+            - fields
+        fieldTemplateId:
+          type: string
+          format: uuid
+        fields:
+          type: object
+          properties:
+            text:
+              type: string
+              description: The value of the field when the template type is text.
+            date:
+              type: string
+              format: date-time
+              description: The value of the field when the template type is date.
+            recursion:
+              type: object
+              description: >-
+                recursion
+
+                Untyped. Should be documented in [original
+                docs](https://www.notion.so/Update-tasks-53d72cb0059a4e0e81cc2fcbfcbf9d0a)
+            label:
+              type: object
+              description: The label value of the field when the template type is select.
+              properties:
+                optionId:
+                  type: string
+                  format: uuid
+            labels:
+              type: object
+              description: The label values of the field when the template type is labels.
+              properties:
+                add:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: The ID for the label to add.
+                    required:
+                      - id
+                remove:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: The ID for the label to remove.
+                    required:
+                      - id
+            linkedTasks:
+              type: object
+              description: >-
+                The linked tasks value of the field when the template type is
+                linkedTask or reverseLinkedTask.
+              properties:
+                add:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: The ID for the task to add.
+                      index:
+                        type: integer
+                        description: The index for the task to add.
+                    required:
+                      - id
+                remove:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: The ID for the task to remove.
+                      index:
+                        type: integer
+                        description: The index for the task to remove.
+                    required:
+                      - id
+        userIds:
+          type: object
+          description: The user IDs of the field when the template type is users.
+          properties:
+            add:
+              type: array
+              items:
+                type: string
+                format: uuid
+                description: The user ID to add.
+              required:
+                - id
+            remove:
+              type: array
+              items:
+                type: string
+                format: uuid
+                description: The user ID to remove.
+              required:
+                - id
+    PatchTasksMoveToTrashEffect:
+      type: object
+      description: Move trash to the task
+      required:
+        - type
+        - trashState
+        - trashStateEffectAt
+      properties:
+        type:
+          type: string
+          enum:
+            - trashState
+        trashState:
+          type: string
+          enum:
+            - trash
+        trashStateEffectAt:
+          type: string
+          format: date-time
+          description: ISO 8601 date-time
+    PatchTasksOutOfTrashEffect:
+      type: object
+      description: Move task out of the trash
+      required:
+        - type
+        - trashState
+        - trashStateEffectAt
+      properties:
+        type:
+          type: string
+          enum:
+            - trashState
+        trashState:
+          type: string
+          enum:
+            - active
+        trashStateEffectAt:
+          type: string
+          format: date-time
+          description: ISO 8601 date-time
+    PatchTasksRequest:
+      type: object
+      description: Patch multiples tasks
+      properties:
+        patches:
+          type: array
+          items:
+            type: object
+            required:
+              - taskIds
+              - effects
+            properties:
+              taskIds:
+                type: array
+                description: Array of task ids, either UUIDs or task numbers
+                items:
+                  type: string
+                  format: uuid
+              effects:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: '#/components/schemas/PatchTasksNameEffect'
+                    - $ref: '#/components/schemas/PatchTasksDescriptionEffect'
+                    - $ref: '#/components/schemas/PatchTasksStatusEffect'
+                    - $ref: '#/components/schemas/PatchTasksDeletedEffect'
+                    - $ref: '#/components/schemas/PatchTasksParentTaskEffect'
+                    - $ref: '#/components/schemas/PatchTasksAssigneesEffect'
+                    - $ref: '#/components/schemas/PatchTasksListsEffect'
+                    - $ref: '#/components/schemas/PatchTasksFieldsEffect'
+                    - $ref: '#/components/schemas/PatchTasksMoveToTrashEffect'
+                    - $ref: '#/components/schemas/PatchTasksOutOfTrashEffect'
+    PatchTasksResponse:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/TaskObject'
+    SearchTasksResponse:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/TaskObject'
+    UpdateTaskRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        listIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description:
+          type: string
+        status:
+          type: string
+          description: >-
+            The status of the task.
+
+            - `backLog`
+
+            - `inProgress`
+
+            - `done`
+
+            - and any *UUID* of available statuses. You can find the *UUIDs*
+            through the field template API.
+        assigneesIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        parentTaskId:
+          type: string
+          format: uuid
+        fields:
+          type: array
+          items:
+            type: object
+            required:
+              - fieldTemplateId
+            properties:
+              fieldTemplateId:
+                type: string
+                format: uuid
+                description: The id of the appropriate field template
+              value:
+                type: string
+                description: >-
+                  For text fields: the text value of the field. For select
+                  fields: the id of the selected option
+              date:
+                type: string
+                format: date-time
+                description: 'For date fields: the date value of the field'
+              labels:
+                type: array
+                items:
+                  type: string
+                description: 'For labels fields: the labels of the field'
+              linkedTasks:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    index:
+                      type: number
+                description: >-
+                  For linkedTasks fields: the tasks to be linked, in the format:
+                  { "id": "UUID", "index": number }
+      required:
+        - name
+    UpdateTaskRequestWithId:
+      allOf:
+        - $ref: '#/components/schemas/UpdateTaskRequest'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: task index (number) or task id (UUID)
+    SearchTasksRequest:
+      type: object
+      properties:
+        filters:
+          $ref: '#/components/schemas/FiltersObject'
+    GetTaskRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: task index (number) or task id (UUID)
+        include:
+          type: array
+          items:
+            type: string
+            enum:
+              - Assignees
+              - CreatedByUser
+              - CompletedByUser
+              - DeletedByUser
+              - Subscribers
+              - Fields.User
+              - Lists
+              - Status
+              - Mentions
+              - NotificationsSubscription
+              - ParentTasks
+              - SubtaskIds
+    GetTaskRequestWithId:
+      allOf:
+        - $ref: '#/components/schemas/GetTaskRequest'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: task index (number) or task id (UUID)
+    MoveTasksRequest:
+      type: object
+      properties:
+        taskIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        sourceId:
+          type: string
+          description: UUID of list or parent task of tasks
+          format: uuid
+        orderIntent:
+          type: object
+          properties:
+            intent:
+              type: string
+              enum:
+                - start
+                - end
+                - before
+                - after
+            taskId:
+              type: string
+              description: UUID (only used for before and after intent)
+              format: uuid
+      required:
+        - taskIds
+        - sourceId
+        - orderIntent
+    ActivityObject:
+      type: object
+      required:
+        - id
+        - model
+        - createdAt
+        - taskId
+        - createdUserId
+        - type
+        - reactjis
+        - readUserIds
+        - url
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique id of the activity.
+        model:
+          type: string
+          description: The model is always `activity`.
+        createdAt:
+          type: string
+          format: date-time
+          description: >-
+            The date when the activity was created. See [Date
+            formats](https://www.notion.so/API-documentation-643aea5bf01742de9232e5971cb4afda).
+        taskId:
+          type: string
+          format: uuid
+          description: The task id of the task this activity is linked to.
+        createdUserId:
+          type: string
+          format: uuid
+          description: The user id that posted that activity.
+        type:
+          type: string
+          enum:
+            - comment
+            - description
+            - createdAt
+            - statusChange
+            - statusRemoved
+            - assigneeChange
+            - listsChange
+            - nameChange
+            - customFieldChange
+            - fieldOptionRemoved
+          description: The type of the activity.
+        message:
+          type: string
+          description: The message/body of this comment/description.
+        oldValue:
+          type: string
+          description: For updates, this is the value before the change.
+        newValue:
+          type: string
+          description: For status, this is the value after the change.
+        reactjis:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+                description: The id of the reactji.
+              model:
+                type: string
+                description: Always set to `reactji`.
+              emoji:
+                type: string
+                description: The emoji used for the reactji.
+              userId:
+                type: string
+                format: uuid
+                description: The user id that added the reactji.
+              activityId:
+                type: string
+                format: uuid
+                description: The id of the activity the reactji was added to.
+          description: An array of reactjis.
+        readUserIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: The user ids that read this activity.
+        url:
+          type: string
+          description: The url of the activity.
+    PostMessageRequest:
+      type: object
+      required:
+        - taskId
+        - type
+        - message
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            - comment
+            - description
+        message:
+          type: string
+          description: >-
+            ## Mentions
+
+
+            Height supports multiple types of mentions, with each their own
+            format:
+
+
+            User mention: `@user_<userId>`
+
+
+            Group mention: `@group_<groupId>`
+
+
+            Task mention: `T-<taskIndex>`
+
+
+            List mention: `#<listKey>`
+    PostMessageRequestWithQueries:
+      allOf:
+        - $ref: '#/components/schemas/PostMessageRequest'
+        - type: object
+          properties:
+            queryParams:
+              type: object
+              properties:
+                realtime:
+                  type: boolean
+                  default: true
+                  description: (defaults to true) - use false when migrating messages
+                notifyUsers:
+                  type: boolean
+                  default: true
+                  description: (defaults to true) - use false when migrating messages
+    ListActivitiesRequest:
+      type: object
+      required:
+        - taskId
+      properties:
+        taskId:
+          type: string
+          format: uuid
+          description: >-
+            Either the task unique `id` (UUID), or the task unique `index` (the
+            123 of T-123).
+    ListActivitiesResponse:
+      type: object
+      required:
+        - list
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityObject'
+    FieldTemplateObject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique id of the field template.
+        model:
+          type: string
+          enum:
+            - fieldTemplate
+          description: The model is always `fieldTemplate`.
+        name:
+          type: string
+          description: The name of the field template.
+        type:
+          type: string
+          description: >-
+            Possible types:
+
+
+            - `text`: any text value attribute (i.e. Story Points)
+
+            - `labels`: used for tags for example
+
+            - `select`: used for priority, sprint,â€¦
+
+            - `date`: used for due date,â€¦
+
+            - `linkedTasks`: usually used for dependencies and so on
+
+            - `status`: the status attribute (only one field template of that
+            type)
+          enum:
+            - text
+            - labels
+            - select
+            - date
+            - linkedTasks
+            - status
+        labelSets:
+          type: array
+          description: >-
+            An array of label sets, only available when the type of the field
+            template is `status`.
+          items:
+            type: object
+            required:
+              - id
+              - model
+              - value
+            properties:
+              id:
+                type: string
+                format: uuid
+                description: The unique id of the field label set.
+              model:
+                type: string
+                enum:
+                  - fieldLabelSet
+                description: The model is always `fieldLabelSet`.
+              value:
+                type: string
+                description: The name of the field label set.
+        labels:
+          type: array
+          description: >-
+            Only available when the type of the field template is `labels`,
+            `select` or `status`.
+          items:
+            type: object
+            required:
+              - id
+              - model
+              - value
+              - hue
+              - statusState
+            properties:
+              id:
+                type: string
+                description: UUID or string (backLog, inProgress and done are hard-coded).
+              model:
+                type: string
+                enum:
+                  - fieldLabel
+                description: The model is always `fieldLabel`.
+              value:
+                type: string
+                description: The name of the label.
+              hue:
+                type: number
+                description: The hue of the label's color (between 0 and 360).
+              labelSetId:
+                type: string
+                format: uuid
+                description: >-
+                  The id of the label set this label belongs to, if any. Only if
+                  the type of field template is `status`.
+              statusState:
+                type: string
+                description: >-
+                  The state of the status, only available when the type of the
+                  field template is `status`.
+
+                  Note that a task is considered as completed if its status has
+                  a state of `canceled` or `completed`.
+                enum:
+                  - default
+                  - started
+                  - blocked
+                  - canceled
+                  - completed
+        archive:
+          type: boolean
+          description: This attribute has been archived.
+      required:
+        - id
+        - model
+        - name
+        - type
+        - archive
+    ListAllFieldTemplatesResponse:
+      type: object
+      required:
+        - list
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldTemplateObject'
+    CreateFieldTemplateOptionRequest:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+        hue:
+          type: number
+          description: number between 0 and 360 (optional)
+    CreateFieldTemplateOptionRequestWithId:
+      allOf:
+        - $ref: '#/components/schemas/CreateFieldTemplateOptionRequest'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              format: uuid
+    UpdateFieldTemplateOptionRequest:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+        hue:
+          type: number
+          description: number between 0 and 360 (optional)
+        deleted:
+          type: boolean
+    UpdateFieldTemplateOptionRequestWithId:
+      allOf:
+        - $ref: '#/components/schemas/UpdateFieldTemplateOptionRequest'
+        - type: object
+          required:
+            - id
+            - optionId
+          properties:
+            id:
+              type: string
+              format: uuid
+            optionId:
+              type: string
+              format: uuid
+    CreateTaskFromTaskFormRequest:
+      type: object
+      properties:
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              questionId:
+                type: string
+                format: uuid
+                description: The id of the task form question
+              name:
+                type: string
+                description: >-
+                  The name of the task - required when the question is for the
+                  task name
+              status:
+                type: string
+                description: >-
+                  The id of the status of the task - required when the question
+                  is for the task status
+              assigneesIds:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+                description: >-
+                  The ids of the assignees of the task - required when the
+                  question is for the task assignees.
+              listIds:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+                description: >-
+                  The ids of the lists of the task - required when the question
+                  is for the lists
+                example:
+                  - d8dff420-ddbe-4afc-8837-f493e922be7b
+                  - 2f2abf80-0a87-4d68-9241-fcc41f427c91
+              description:
+                type: string
+                description: >-
+                  The description of the string. Accepts markdown. Required when
+                  the question is for the description
+              field:
+                type: object
+                required:
+                  - fieldTemplateId
+                properties:
+                  fieldTemplateId:
+                    type: string
+                    format: uuid
+                    description: The id of the appropriate field template
+                  value:
+                    type: string
+                    description: >-
+                      For text fields: the text value of the field. For select
+                      fields: the id of the selected option
+                  date:
+                    type: string
+                    format: date-time
+                    description: 'For date fields: the date value of the field'
+                  labels:
+                    type: array
+                    items:
+                      type: string
+                    description: 'For labels fields: the labels of the field'
+                  linkedTasks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        index:
+                          type: number
+                    description: >-
+                      For linkedTasks fields: the tasks to be linked, in the
+                      format: { "id": "UUID", "index": number }
+                description: >-
+                  TaskField Attributes (optional) Required to belong to the
+                  attribute associated with the question. See the Task Object
+                  for specifications
+          description: Array of question responses
+      required:
+        - questionId
+    CreateTaskFromTaskFormRequestWithIdQueries:
+      allOf:
+        - $ref: '#/components/schemas/CreateTaskFromTaskFormRequest'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: The id of the task form
+            queryParams:
+              type: object
+              properties:
+                asBot:
+                  type: boolean
+                  description: >-
+                    Only allowed for public task forms, and required if not
+                    authenticated
+    GetTaskFormRequest:
+      type: object
+      required:
+        - urlKey
+      properties:
+        urlKey:
+          type: string
+        keyType:
+          type: string
+          description: One of key or urlKey, defaulting to id
+          enum:
+            - key
+            - urlKey
+          example: urlKey
+        include:
+          type: array
+          items:
+            type: string
+            description: >-
+              Task form include type. Valid values are "RestrictedUsers",
+              "RestrictedLists", "FieldTemplates", "SubtaskForms", "Questions",
+              and "Fields".
+            enum:
+              - RestrictedUsers
+              - RestrictedLists
+              - FieldTemplates
+              - SubtaskForms
+              - Questions
+              - Fields
+          description: Array of task form includes
+        archived:
+          type: boolean
+          description: only look for archived or unarchived forms
+        draft:
+          type: boolean
+          description: only look for archived or unarchived forms
+    TaskFormObject:
+      description: Uncertain typed. Height team did't provide schema for Task Form.
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The ID of the task form.
+          example: c91896fb-cb00-4122-9e13-5ea3f760f3a4
+        model:
+          type: string
+          description: always "taskForm"
+          enum:
+            - taskForm
+        version:
+          type: integer
+          description: The version of the task form.
+          example: 2
+        key:
+          type: string
+          description: The key of the task form.
+          example: JfsPVS9NxJ
+        urlKey:
+          type: string
+          description: The URL key of the task form.
+          example: ryNw67fFHJCd
+        url:
+          type: string
+          description: The URL of the task form.
+          example: https://height.app/u28gpe10d5/?taskForm=Task-submission-ryNw67fFHJCd
+        name:
+          type: string
+          description: The name of the task form.
+          example: Task submission
+        taskFormDescription:
+          type: string
+          description: The description of the task form.
+          example: ''
+        disabledReason:
+          type: string
+          nullable: true
+          description: The reason why the task form is disabled.
+          example: null
+        archived:
+          type: boolean
+          description: Flag to indicate whether the task form is archived.
+          example: false
+        draft:
+          type: boolean
+          description: Flag to indicate whether the task form is a draft.
+          example: false
+        publicAccess:
+          type: string
+          description: The type of public access for the task form.
+          example: readonly
+        listIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: The IDs of the lists associated with the task form.
+          example:
+            - baa40cc6-240f-4df2-a01b-22476876d61e
+        parentTaskId:
+          type: string
+          nullable: true
+          format: uuid
+          description: The ID of the parent task.
+          example: null
+        status:
+          type: string
+          description: >-
+            The status of the task.
+
+            - `backLog`
+
+            - `inProgress`
+
+            - `done`
+
+            - and any *UUID* of available statuses. You can find the *UUIDs*
+            through the field template API.
+        questions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+                description: The ID of the question.
+                example: b842f01d-8dfa-40cf-884d-1b2b95d8b6fb
+              fieldId:
+                type: string
+                description: The ID of the field.
+                example: name
+              value:
+                type: string
+                description: The value of the question.
+                example: Task Name
+              required:
+                type: boolean
+                description: Flag to indicate whether the question is required.
+                example: true
+              placeholder:
+                type: string
+                nullable: true
+                description: The placeholder for the question.
+                example: Name
+              restrictedLabelIds:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+                description: The IDs of the restricted labels for the question.
+                example: []
+              multipleLabels:
+                type: boolean
+                description: Flag to indicate whether the question accepts multiple labels.
+                example: true
+            description: The list of questions in the task form.
+          example:
+            - id: b842f01d-8dfa-40cf-884
+    InvitedUserObject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique ID of the user.
+        model:
+          type: string
+          description: The model is always `user`.
+          enum:
+            - user
+        state:
+          type: string
+          description: The state of the user.
+          enum:
+            - enabled
+            - invited
+          example: enabled
+        email:
+          type: string
+          description: The email of the user.
+        access:
+          type: string
+          enum:
+            - member
+            - guest
+            - anonymous
+          example: member
+        createdAt:
+          type: string
+          format: date-time
+          description: >-
+            The date and time the user was created, see [Date
+            formats](https://www.notion.so/API-documentation-643aea5bf01742de9232e5971cb4afda).
+          example: '2023-02-18T10:15:00Z'
+        pictureUrl:
+          type: string
+          description: The URL of the user's picture, if available.
+          example: https://example.com/user.jpg
+      required:
+        - id
+        - model
+        - state
+        - email
+        - access
+        - createdAt
+    EnabledUserObject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique ID of the user.
+        model:
+          type: string
+          description: The model is always `user`.
+          enum:
+            - user
+        state:
+          type: string
+          description: The state of the user.
+          enum:
+            - enabled
+            - invited
+          example: enabled
+        email:
+          type: string
+          description: The email of the user.
+        username:
+          type: string
+          description: The username of the user, only available for `enabled` users.
+        firstname:
+          type: string
+          description: The first name of the user, only available for `enabled` users.
+        lastname:
+          type: string
+          description: The last name of the user, only available for `enabled` users.
+        access:
+          type: string
+          description: The access level of the user.
+          enum:
+            - member
+            - guest
+            - anonymous
+          example: member
+        createdAt:
+          type: string
+          format: date-time
+          description: >-
+            The date and time the user was created, see [Date
+            formats](https://www.notion.so/API-documentation-643aea5bf01742de9232e5971cb4afda).
+          example: '2023-02-18T10:15:00Z'
+        pictureUrl:
+          type: string
+          nullable: true
+          description: The URL of the user's picture, if available.
+          example: https://example.com/user.jpg
+      required:
+        - id
+        - model
+        - state
+        - email
+        - access
+        - createdAt
+        - username
+        - firstname
+        - lastname
+    UserObject:
+      allOf:
+        - $ref: '#/components/schemas/EnabledUserObject'
+        - $ref: '#/components/schemas/InvitedUserObject'
+    ListAllUsersResponse:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserObject'
+          description: The list of users.
+    GetUserRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+    GroupObject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique ID of the group.
+        model:
+          type: string
+          description: The model is always `group`.
+          enum:
+            - group
+        name:
+          type: string
+          description: The name of the group.
+        handle:
+          type: string
+          description: The handle of the group.
+        hue:
+          type: number
+          description: The color/hue (0-360) of the group.
+        userIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: The list of user IDs that are in the group.
+        archived:
+          type: boolean
+          description: Flag to indicate whether the group is archived.
+      required:
+        - id
+        - model
+        - name
+        - handle
+        - hue
+        - userIds
+        - archived
+    ListAllGroupsResponse:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupObject'
+    SecurityLogEventObject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique ID of the event.
+        model:
+          type: string
+          description: The model is always `securityLogEvent`.
+          enum:
+            - securityLogEvent
+        createdAt:
+          type: string
+          format: date-time
+          description: >-
+            The date and time the event occurred. See [Date
+            formats](https://developers.notion.com/reference/rich-text#date-property-values).
+          example: '2023-02-18T11:20:00Z'
+        userId:
+          type: string
+          format: uuid
+          description: The ID of the user that initiated the event.
+        userEmail:
+          type: string
+          description: The email of the user that initiated the event.
+        eventType:
+          type: string
+          description: |-
+            Possible values are:
+
+            - `FieldTemplateInsert`: an attribute was created
+            - `FieldTemplateUpdate`: an attribute was updated
+            - `FieldTemplateArchive`: an attribute was archived
+            - `FieldTemplateRestore`: an attribute was restored
+            - `PermissionUpsert`: a list permission was created or updated
+            - `PermissionDelete`: a list permission was deleted
+            - `UserInvite`: an user was invited
+            - `UserSignUp`: an user signed up
+          enum:
+            - FieldTemplateInsert
+            - FieldTemplateUpdate
+            - FieldTemplateArchive
+            - FieldTemplateRestore
+            - PermissionUpsert
+            - PermissionDelete
+            - UserInvite
+            - UserSignUp
+          example: FieldTemplateInsert
+        oldValue:
+          type: object
+          description: >-
+            The old value of the attribute, permission, etc. that was updated or
+            deleted.
+          example:
+            email: invited@example.com
+            access: member
+        newValue:
+          type: object
+          description: >-
+            The new value of the attribute, permission, etc. that was updated or
+            created.
+          example:
+            email: invited@example.com
+            access: member
+      required:
+        - id
+        - model
+        - createdAt
+        - userId
+        - userEmail
+        - eventType
+    ListAllSecurityLogEventsResponse:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/SecurityLogEventObject'
+    WorkspaceObject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique ID of the workspace.
+          example: 5a5e8d3f-c2ff-4a7a-aba4-4f22b19c5369
+        model:
+          type: string
+          description: The model is always `workspace`.
+          example: workspace
+        name:
+          type: string
+          description: The name of the workspace.
+          example: Acme
+        url:
+          type: string
+          description: The full URL of the workspace.
+          example: https://acme.height.app
+      required:
+        - id
+        - model
+        - name
+        - url
