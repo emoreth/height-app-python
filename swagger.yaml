@@ -2073,6 +2073,9 @@ components:
             - nameChange
             - customFieldChange
             - fieldOptionRemoved
+            - subtaskAdded
+            - parentTaskChange
+            - copilot
           description: The type of the activity.
         message:
           type: string
