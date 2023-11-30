@@ -1087,16 +1087,11 @@ components:
         - assigneesIds
         - fields
         - deleted
-        - deletedAt
-        - deletedByUserId
         - completed
-        - completedAt
         - createdAt
         - createdUserId
         - lastActivityAt
         - url
-        - trashedAt
-        - trashedByUserId
       properties:
         id:
           type: string

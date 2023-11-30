@@ -109,16 +109,21 @@ class TaskObject(object):
         self.assignees_ids = assignees_ids
         self.fields = fields
         self.deleted = deleted
-        self.deleted_at = deleted_at
-        self.deleted_by_user_id = deleted_by_user_id
+        if deleted_at is not None:
+            self.deleted_at = deleted_at
+        if deleted_by_user_id is not None:
+            self.deleted_by_user_id = deleted_by_user_id
         self.completed = completed
-        self.completed_at = completed_at
+        if completed_at is not None:
+            self.completed_at = completed_at
         self.created_at = created_at
         self.created_user_id = created_user_id
         self.last_activity_at = last_activity_at
         self.url = url
-        self.trashed_at = trashed_at
-        self.trashed_by_user_id = trashed_by_user_id
+        if trashed_at is not None:
+            self.trashed_at = trashed_at
+        if trashed_by_user_id is not None:
+            self.trashed_by_user_id = trashed_by_user_id
         if parent_task_id is not None:
             self.parent_task_id = parent_task_id
 
@@ -396,8 +401,6 @@ class TaskObject(object):
         :param deleted_at: The deleted_at of this TaskObject.  # noqa: E501
         :type: datetime
         """
-        if deleted_at is None:
-            raise ValueError("Invalid value for `deleted_at`, must not be `None`")  # noqa: E501
 
         self._deleted_at = deleted_at
 
@@ -421,8 +424,6 @@ class TaskObject(object):
         :param deleted_by_user_id: The deleted_by_user_id of this TaskObject.  # noqa: E501
         :type: str
         """
-        if deleted_by_user_id is None:
-            raise ValueError("Invalid value for `deleted_by_user_id`, must not be `None`")  # noqa: E501
 
         self._deleted_by_user_id = deleted_by_user_id
 
@@ -469,8 +470,6 @@ class TaskObject(object):
         :param completed_at: The completed_at of this TaskObject.  # noqa: E501
         :type: datetime
         """
-        if completed_at is None:
-            raise ValueError("Invalid value for `completed_at`, must not be `None`")  # noqa: E501
 
         self._completed_at = completed_at
 
@@ -590,8 +589,6 @@ class TaskObject(object):
         :param trashed_at: The trashed_at of this TaskObject.  # noqa: E501
         :type: datetime
         """
-        if trashed_at is None:
-            raise ValueError("Invalid value for `trashed_at`, must not be `None`")  # noqa: E501
 
         self._trashed_at = trashed_at
 
@@ -615,8 +612,6 @@ class TaskObject(object):
         :param trashed_by_user_id: The trashed_by_user_id of this TaskObject.  # noqa: E501
         :type: str
         """
-        if trashed_by_user_id is None:
-            raise ValueError("Invalid value for `trashed_by_user_id`, must not be `None`")  # noqa: E501
 
         self._trashed_by_user_id = trashed_by_user_id
 
