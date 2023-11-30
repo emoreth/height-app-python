@@ -1,23 +1,18 @@
 openapi: 3.0.3
 info:
   title: Height APP API
-  description: >-
-    Unofficial Open API 3.1 specification for [Height App
-    API](https://www.notion.so/API-documentation-643aea5bf01742de9232e5971cb4afda).
+  description: |-
+    Unofficial Open API 3.1 specification for [Height App API](https://www.notion.so/API-documentation-643aea5bf01742de9232e5971cb4afda).
     This is not affiliated with Height team.
-
 
     ---
 
     # Authentication
 
 
-    The Height API uses API keys to authenticate requests. **You can view your
-    API key in the Height settings under API**.
+    The Height API uses API keys to authenticate requests. **You can view your API key in the Height settings under API**.
 
-
-    Authentication to the API is performed via the `Authorization` header. All
-    API requests should be made over HTTPs.
+    Authentication to the API is performed via the `Authorization` header. All API requests should be made over HTTPs.
 
 
     i.e. Get your workspace.
@@ -30,12 +25,10 @@ info:
     ```
 
 
-    Third-party applications must connect to the Height API using
-    [OAuth2](https://www.notion.so/API-documentation-643aea5bf01742de9232e5971cb4afda).
+    Third-party applications must connect to the Height API using [OAuth2](https://www.notion.so/API-documentation-643aea5bf01742de9232e5971cb4afda).
 
 
-    See [OAuth Apps on
-    Height](https://www.notion.so/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640)
+    See [OAuth Apps on Height](https://www.notion.so/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640)
     for more information.
 
 
